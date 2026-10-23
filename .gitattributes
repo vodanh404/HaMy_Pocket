@@ -1,0 +1,4 @@
+/assets/opus_zh_vi_onnx/decoder_model.onnx filter=lfs diff=lfs merge=lfs -text
+/assets/opus_zh_vi_onnx/decoder_model_merged.onnx filter=lfs diff=lfs merge=lfs -text
+/assets/opus_zh_vi_onnx/decoder_with_past_model.onnx filter=lfs diff=lfs merge=lfs -text
+/assets/opus_zh_vi_onnx/encoder_model.onnx filter=lfs diff=lfs merge=lfs -text
