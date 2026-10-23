@@ -1,5 +1,3 @@
-import '../domain/models/vocab.dart';
-import '../services/storage/storage_service.dart';
 import 'study.dart';
 
 class NewsWordMatch {
