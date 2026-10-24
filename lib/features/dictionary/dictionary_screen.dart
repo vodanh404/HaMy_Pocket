@@ -154,7 +154,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _translateQuery,
                   icon: const Icon(Icons.translate),
-                  label: const Text('Dịch bằng LibreTranslate'),
+                  label: const Text('Dịch bằng Opus Trung–Việt'),
                 ),
               ),
             ),

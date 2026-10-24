@@ -51,6 +51,10 @@ void main() {
     expect(app.builtIn.any((word) => word.level == 6), isTrue);
     expect(app.builtIn.any((word) => word.level == 7), isTrue);
     expect(app.levelLabel(7), 'HSK 7–9');
+    expect(
+      app.filterItems.any((item) => item.$1 == 8 || item.$1 == 9),
+      isFalse,
+    );
 
     final love = app.builtIn.firstWhere((word) => word.hanzi == '爱');
     expect(love.traditional, contains('愛'));
@@ -58,6 +62,14 @@ void main() {
     expect(app.matchScore(love, 'ai'), greaterThan(0));
     expect(app.inScope(love, 1), isTrue);
     expect(app.inScope(love, 2), isFalse);
+    final upperLevel = app.Vocab(
+      id: 'upper-level',
+      hanzi: '高',
+      pinyin: 'gāo',
+      meaning: 'Cao cấp',
+      level: 9,
+    );
+    expect(app.inScope(upperLevel, 7), isTrue);
   });
 
   test('loads valid persisted entries and repairs malformed or duplicate data', () async {

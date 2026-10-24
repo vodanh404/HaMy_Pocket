@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hamy_poket/data/services/news_article_content_service.dart';
 import 'package:hamy_poket/data/services/news_feed_service.dart';
 import 'package:hamy_poket/main.dart' as app;
 import 'package:hamy_poket/shared/news_vocabulary.dart';
@@ -31,6 +32,21 @@ void main() {
     expect(articles.single.url, 'https://example.com/news/1');
   });
 
+  test('keeps every article in an RSS feed', () {
+    final items = List.generate(
+      15,
+      (index) =>
+          '<item><title>新闻标题$index</title><link>https://example.com/$index</link></item>',
+    ).join();
+    final articles = NewsFeedService.parseRss(
+      '<rss><channel>$items</channel></rss>',
+      sourceId: 'test',
+      sourceName: '测试来源',
+    );
+
+    expect(articles, hasLength(15));
+  });
+
   test('extracts only Zaobao article links from homepage HTML', () {
     const homepage = '''
       <html><body>
@@ -48,6 +64,44 @@ void main() {
       articles.single.url,
       'https://www.zaobao.com.sg/news/singapore/story1',
     );
+  });
+
+  test('keeps more than thirty Zaobao article links', () {
+    final links = List.generate(
+      35,
+      (index) => '<a href="/news/singapore/story$index">新加坡新闻标题$index</a>',
+    ).join();
+    final articles = NewsFeedService.parseZaobaoHomepage(
+      '<html><body>$links</body></html>',
+    );
+
+    expect(articles, hasLength(35));
+  });
+
+  test('extracts article paragraphs without page navigation and ads', () {
+    const page = '''
+      <html><body>
+        <nav>导航广告内容</nav>
+        <main>
+          <article>
+            <h1>新闻标题</h1>
+            <p>这是文章正文第一段，介绍新闻事件的具体情况。</p>
+            <p>这是文章正文第二段，补充相关背景和后续发展。</p>
+            <aside>推荐阅读内容不应显示</aside>
+          </article>
+        </main>
+        <footer>网站版权和导航</footer>
+      </body></html>
+    ''';
+
+    final content = NewsArticleContentService.parseHtml(page);
+
+    expect(content, contains('新闻标题'));
+    expect(content, contains('这是文章正文第一段'));
+    expect(content, contains('这是文章正文第二段'));
+    expect(content, isNot(contains('导航广告内容')));
+    expect(content, isNot(contains('推荐阅读内容')));
+    expect(content, isNot(contains('网站版权')));
   });
 
   test('finds dictionary translations in source headlines', () async {

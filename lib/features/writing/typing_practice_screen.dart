@@ -13,10 +13,10 @@ class TypingPracticeScreen extends StatefulWidget {
 }
 
 class _TypingPracticeScreenState extends State<TypingPracticeScreen> {
-  static const _sessionSize = AppConstants.typingSessionSize;
   final _answerController = TextEditingController();
   final _answerFocus = FocusNode();
-  int _level = 1;
+  int _level = -1;
+  int _sessionSize = AppConstants.typingSessionSize;
   late List<Vocab> _queue;
   int _index = 0;
   int _correct = 0;
@@ -41,15 +41,16 @@ class _TypingPracticeScreenState extends State<TypingPracticeScreen> {
     final seen = <String>{};
     final pool =
         allWords
-            .where((word) => word.level == level && seen.add(word.id))
+            .where((word) => inScope(word, level) && seen.add(word.id))
             .toList()
           ..shuffle();
-    return pool.take(_sessionSize).toList();
+    return _sessionSize == 0 ? pool : pool.take(_sessionSize).toList();
   }
 
-  void _restart({int? level}) {
+  void _restart({int? level, int? sessionSize}) {
     setState(() {
       _level = level ?? _level;
+      _sessionSize = sessionSize ?? _sessionSize;
       _queue = _newQueue(_level);
       _index = 0;
       _correct = 0;
@@ -118,11 +119,27 @@ class _TypingPracticeScreenState extends State<TypingPracticeScreen> {
               border: OutlineInputBorder(),
             ),
             items: [
-              for (var level = 1; level <= AppConstants.hskLevelCount; level++)
-                DropdownMenuItem(value: level, child: Text(levelLabel(level))),
+              for (final (level, label) in filterItems)
+                DropdownMenuItem(value: level, child: Text(label)),
             ],
             onChanged: (level) {
               if (level != null) _restart(level: level);
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _sessionSize,
+            decoration: const InputDecoration(
+              labelText: 'Số từ trong lượt luyện',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: 10, child: Text('10 từ')),
+              DropdownMenuItem(value: 25, child: Text('25 từ')),
+              DropdownMenuItem(value: 0, child: Text('Toàn bộ từ phù hợp')),
+            ],
+            onChanged: (size) {
+              if (size != null) _restart(sessionSize: size);
             },
           ),
           const SizedBox(height: 24),

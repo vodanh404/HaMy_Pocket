@@ -44,18 +44,37 @@ class StudyMaterialLibrary extends ChangeNotifier {
 
     final savedFile = await _savedFile();
     if (await savedFile.exists()) {
-      final saved = jsonDecode(await savedFile.readAsString());
-      if (saved is! List<dynamic>) {
-        throw const FormatException('Danh sách tài liệu đã nhập không hợp lệ.');
+      dynamic saved;
+      try {
+        saved = jsonDecode(await savedFile.readAsString());
+      } on FormatException catch (error) {
+        debugPrint('Ignoring malformed imported material list: $error');
+        saved = const <dynamic>[];
       }
-      for (final item in saved) {
-        if (item is! Map<String, dynamic>) {
-          throw const FormatException('Một tài liệu đã nhập không hợp lệ.');
+      if (saved is! List<dynamic>) {
+        debugPrint('Ignoring imported materials: expected a list.');
+      } else {
+        for (final item in saved) {
+          if (item is! Map<String, dynamic>) {
+            debugPrint(
+              'Ignoring invalid imported material: expected an object.',
+            );
+            continue;
+          }
+          final StudyMaterial material;
+          try {
+            material = StudyMaterial.fromJson(item);
+          } on TypeError catch (error) {
+            debugPrint('Ignoring malformed imported material: $error');
+            continue;
+          } on FormatException catch (error) {
+            debugPrint('Ignoring malformed imported material: $error');
+            continue;
+          }
+          final localPath = material.localPath;
+          if (localPath == null || !await File(localPath).exists()) continue;
+          _materials[material.id] = material;
         }
-        final material = StudyMaterial.fromJson(item);
-        final localPath = material.localPath;
-        if (localPath == null || !await File(localPath).exists()) continue;
-        _materials[material.id] = material;
       }
     }
 

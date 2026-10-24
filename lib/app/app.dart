@@ -9,7 +9,7 @@ class ChineseLearningApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Học Tiếng Trung',
+    title: 'HaMy_Pocket',
     scaffoldMessengerKey: messengerKey,
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),

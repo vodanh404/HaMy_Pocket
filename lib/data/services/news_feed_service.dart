@@ -133,7 +133,6 @@ class NewsFeedService {
           url: uri.toString(),
         ),
       );
-      if (articles.length == 30) break;
     }
     return articles;
   }

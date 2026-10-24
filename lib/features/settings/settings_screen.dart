@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             ListTile(
               leading: Icon(Icons.info_outline),
-              title: Text('Học Tiếng Trung'),
+              title: Text('HaMy_Pocket'),
               subtitle: Text('Từ vựng, ôn tập và luyện tập theo HSK'),
             ),
           ],

@@ -56,7 +56,7 @@ class _ClozePracticeScreenState extends State<ClozePracticeScreen> {
     _questions = [
       for (final feed in feeds)
         for (final article in feed.articles.take(20))
-          if (_questionFor(article) case final question?) question,
+          ?_questionFor(article),
     ];
     _index = 0;
     _resetAnswer();

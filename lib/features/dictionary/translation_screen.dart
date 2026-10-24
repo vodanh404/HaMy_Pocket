@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/services/libre_translate_service.dart';
+import '../../data/services/opus_zh_vi_translation_service.dart';
 import '../../domain/models/vocab.dart';
 import '../../services/storage/storage_service.dart';
 
@@ -39,7 +39,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
       _translation = null;
     });
     try {
-      final result = await LibreTranslateService.instance.translate(
+      final result = await OpusZhViTranslationService.instance.translate(
         _controller.text,
       );
       if (mounted) setState(() => _translation = result);
@@ -57,12 +57,11 @@ class _TranslationScreenState extends State<TranslationScreen> {
     final translation = _translation;
     if (query.isEmpty || translation == null) return;
 
-    final containsChinese = RegExp(r'[\u3400-\u9fff]').hasMatch(query);
     final word = Vocab(
       id: 'translate_${DateTime.now().microsecondsSinceEpoch}',
-      hanzi: containsChinese ? query : translation,
+      hanzi: query,
       pinyin: '—',
-      meaning: containsChinese ? translation : query,
+      meaning: translation,
       level: 0,
       custom: true,
     );
@@ -88,19 +87,18 @@ class _TranslationScreenState extends State<TranslationScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Dịch bằng LibreTranslate')),
+    appBar: AppBar(title: const Text('Dịch bằng Opus Trung–Việt')),
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
         const Text(
-          'Dịch Trung ↔ Việt. Kết quả được tạo trực tuyến bởi LibreTranslate.',
+          'Dịch tiếng Trung sang tiếng Việt ngoại tuyến bằng Opus zh-vi.',
         ),
         const SizedBox(height: 16),
         TextField(
@@ -110,7 +108,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
           textInputAction: TextInputAction.newline,
           decoration: const InputDecoration(
             labelText: 'Từ hoặc câu cần dịch',
-            hintText: 'Nhập tiếng Trung hoặc tiếng Việt',
+            hintText: 'Nhập từ hoặc câu tiếng Trung',
             border: OutlineInputBorder(),
           ),
         ),

@@ -43,6 +43,8 @@ dependencies:
   http: ^1.5.0
   url_launcher: ^6.3.2
   xml: ^7.0.1
+  onnxruntime: ^1.4.1
+  dart_sentencepiece_tokenizer: ^1.4.1
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +73,11 @@ flutter:
     - assets/data/complete_han_viet.json
     - assets/audio/
     - assets/documents/
+    - assets/opus_zh_vi_onnx/encoder_model.onnx
+    - assets/opus_zh_vi_onnx/decoder_model.onnx
+    - assets/opus_zh_vi_onnx/source.spm
+    - assets/opus_zh_vi_onnx/target.spm
+    - assets/opus_zh_vi_onnx/vocab.json
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

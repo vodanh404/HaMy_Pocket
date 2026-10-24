@@ -76,7 +76,9 @@ class HomeScreen extends StatelessWidget {
     List<Vocab> words,
     Map<String, Srs> m,
   ) {
-    final inLevel = words.where((v) => v.level == l).toList();
+    final inLevel = words
+        .where((v) => l >= 7 ? v.level >= 7 : v.level == l)
+        .toList();
     final learned = inLevel.where((v) => (m[v.id]?.reps ?? 0) > 0).length;
     final c = tierColor(l);
     return Padding(
@@ -176,7 +178,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Học Tiếng Trung'),
+      title: const Text('HaMy_Pocket'),
       actions: [
         IconButton(
           tooltip: 'Cài đặt',
@@ -219,9 +221,9 @@ class HomeScreen extends StatelessWidget {
               onTap: onSpeaking,
             ),
             _skillTile(
-              icon: Icons.auto_stories,
-              title: 'Tài liệu & ngữ pháp',
-              subtitle: 'Mở giáo trình, đề thi HSK và tài liệu ngữ pháp',
+              icon: Icons.newspaper,
+              title: 'Đọc báo',
+              subtitle: 'Chọn bài báo tiếng Trung từ nhiều nguồn tin',
               color: Colors.teal,
               onTap: onReading,
             ),
@@ -262,16 +264,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Row(
-              children: [
-                for (final l in [
-                  7,
-                  if (words.any((v) => v.level == 8)) 8,
-                  if (words.any((v) => v.level == 9)) 9,
-                ])
-                  Expanded(child: _levelTile(context, l, words, m)),
-              ],
-            ),
+            Row(children: [Expanded(child: _levelTile(context, 7, words, m))]),
             const SizedBox(height: 16),
             Material(
               color: Colors.teal.shade50,

@@ -18,7 +18,7 @@ List<Vocab> get allWords => [
 
 String levelLabel(int l) => l == 0
     ? 'Của tôi'
-    : l == 7
+    : l >= 7
     ? 'HSK 7–9'
     : 'HSK $l';
 
@@ -32,7 +32,12 @@ MaterialColor tierColor(int l) => l == 0
 
 /// Filter value: -1 = all, 0 = personal words, 1..9 = HSK group/level.
 bool inScope(Vocab v, int f) =>
-    f < 0 || (f == 0 ? Store.isPersonal(v) : v.level == f);
+    f < 0 ||
+    (f == 0
+        ? Store.isPersonal(v)
+        : f >= 7
+        ? v.level >= 7
+        : v.level == f);
 
 final filterItems = <(int, String)>[
   (-1, 'Tất cả'),
