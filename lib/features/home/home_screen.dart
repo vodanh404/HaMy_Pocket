@@ -81,10 +81,11 @@ class HomeScreen extends StatelessWidget {
         .toList();
     final learned = inLevel.where((v) => (m[v.id]?.reps ?? 0) > 0).length;
     final c = tierColor(l);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(4),
       child: Material(
-        color: c.shade50,
+        color: dark ? c.shade900 : c.shade50,
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -102,14 +103,17 @@ class HomeScreen extends StatelessWidget {
                   levelLabel(l),
                   style: TextStyle(
                     fontSize: l == 7 ? 22 : 26,
-                    color: c.shade800,
+                    color: dark ? c.shade100 : c.shade800,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$learned/${inLevel.length} từ',
-                  style: TextStyle(fontSize: 12, color: c.shade900),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: dark ? c.shade200 : c.shade900,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -118,7 +122,9 @@ class HomeScreen extends StatelessWidget {
                     value: inLevel.isEmpty ? 0 : learned / inLevel.length,
                     minHeight: 6,
                     color: c.shade600,
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
                   ),
                 ),
               ],
@@ -130,6 +136,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _skillTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -163,7 +170,10 @@ class HomeScreen extends StatelessWidget {
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -207,13 +217,15 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             _skillTile(
+              context: context,
               icon: Icons.headphones,
-              title: 'Luyện nghe',
-              subtitle: 'Nghe từ và câu tiếng Trung',
+              title: 'Nghe và đọc',
+              subtitle: 'Luyện nghe và đọc hiểu tiếng Trung',
               color: Colors.blue,
               onTap: onListening,
             ),
             _skillTile(
+              context: context,
               icon: Icons.record_voice_over,
               title: 'Luyện nói',
               subtitle: 'Luyện thanh điệu và giao tiếp',
@@ -221,6 +233,7 @@ class HomeScreen extends StatelessWidget {
               onTap: onSpeaking,
             ),
             _skillTile(
+              context: context,
               icon: Icons.newspaper,
               title: 'Đọc báo',
               subtitle: 'Chọn bài báo tiếng Trung từ nhiều nguồn tin',
@@ -228,6 +241,7 @@ class HomeScreen extends StatelessWidget {
               onTap: onReading,
             ),
             _skillTile(
+              context: context,
               icon: Icons.keyboard,
               title: 'Luyện gõ',
               subtitle: 'Nhập chữ Hán theo nghĩa tiếng Việt',
@@ -267,7 +281,7 @@ class HomeScreen extends StatelessWidget {
             Row(children: [Expanded(child: _levelTile(context, 7, words, m))]),
             const SizedBox(height: 16),
             Material(
-              color: Colors.teal.shade50,
+              color: Theme.of(context).colorScheme.tertiaryContainer,
               borderRadius: BorderRadius.circular(18),
               clipBehavior: Clip.antiAlias,
               child: ListTile(
@@ -277,7 +291,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 leading: Icon(
                   Icons.bookmarks,
-                  color: Colors.teal.shade700,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
                   size: 32,
                 ),
                 title: const Text(

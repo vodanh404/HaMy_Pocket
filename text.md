@@ -5,4 +5,6 @@ flutter run -d emulator-5554
 flutter clean
 // làm app hoàn chỉnh
 flutter build windows
+flutter build apk --release
+flutter build appbundle --release
 

@@ -117,7 +117,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 22, color: Colors.grey),
                   ),
-                  Center(child: speakerButton(q.hanzi)),
+                  Center(child: speakerButton(context, q.hanzi)),
                   const SizedBox(height: 12),
                   for (final o in _options)
                     Padding(

@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.5.6
   flutter_tts: ^4.0.2
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -45,6 +45,8 @@ dependencies:
   xml: ^7.0.1
   onnxruntime: ^1.4.1
   dart_sentencepiece_tokenizer: ^1.4.1
+  sherpa_onnx: 1.12.36
+  record: ^7.1.2
 
 dev_dependencies:
   flutter_test:
@@ -71,7 +73,14 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/data/complete_han_viet.json
+    - assets/images/logo.png
     - assets/audio/
+    - assets/audio/HSK1/
+    - assets/audio/HSK2/
+    - assets/audio/HSK3/
+    - assets/audio/HSK4/
+    - assets/audio/HSK5/
+    - assets/audio/HSK6/
     - assets/documents/
     - assets/opus_zh_vi_onnx/encoder_model.onnx
     - assets/opus_zh_vi_onnx/decoder_model.onnx

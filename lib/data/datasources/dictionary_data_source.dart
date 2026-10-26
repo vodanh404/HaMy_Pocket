@@ -231,7 +231,7 @@ final List<Vocab> _sampleWords = [
   _w(9, '斟酌', 'zhēnzhuó', 'Cân nhắc kỹ', '🤔'),
 ];
 
-late final List<Vocab> builtIn;
+List<Vocab> builtIn = [];
 
 int? _dictionaryLevel(List<dynamic> tags, String prefix) {
   for (final tag in tags.cast<String>()) {
@@ -247,10 +247,11 @@ Future<void> loadDictionary() async {
     await rootBundle.loadString(AppConstants.dictionaryAsset),
   ) as List<dynamic>;
   final samples = {for (final word in _sampleWords) word.hanzi: word};
-  builtIn = [
+  final recordsForDictionary = [
     for (final raw in records)
       _dictionaryWord(raw as Map<String, dynamic>, samples),
   ];
+  builtIn = recordsForDictionary;
 }
 
 Vocab _dictionaryWord(Map<String, dynamic> record, Map<String, Vocab> samples) {

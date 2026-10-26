@@ -138,8 +138,8 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                   FlipCard(
                     flipped: _flipped,
                     onTap: () => setState(() => _flipped = !_flipped),
-                    front: cardFront(list[_index]),
-                    back: cardBack(list[_index]),
+                    front: cardFront(context, list[_index]),
+                    back: cardBack(context, list[_index]),
                   ),
                   const SizedBox(height: 8),
                   Text(

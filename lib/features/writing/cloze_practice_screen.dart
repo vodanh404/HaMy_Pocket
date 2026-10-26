@@ -55,8 +55,7 @@ class _ClozePracticeScreenState extends State<ClozePracticeScreen> {
     final feeds = await NewsFeedService.instance.loadFeeds();
     _questions = [
       for (final feed in feeds)
-        for (final article in feed.articles.take(20))
-          ?_questionFor(article),
+        for (final article in feed.articles.take(20)) ?_questionFor(article),
     ];
     _index = 0;
     _resetAnswer();
@@ -69,9 +68,7 @@ class _ClozePracticeScreenState extends State<ClozePracticeScreen> {
         ? article.title
         : article.description;
     final matches =
-        findNewsWords(text)
-            .where((match) => match.text.length >= 2)
-            .toList()
+        findNewsWords(text).where((match) => match.text.length >= 2).toList()
           ..sort(
             (left, right) => right.text.length.compareTo(left.text.length),
           );
@@ -219,7 +216,7 @@ class _ClozePracticeScreenState extends State<ClozePracticeScreen> {
       ),
       const SizedBox(height: 12),
       Card(
-        color: Colors.red.shade50,
+        color: Theme.of(context).colorScheme.secondaryContainer,
         child: Padding(
           padding: const EdgeInsets.all(22),
           child: Text(

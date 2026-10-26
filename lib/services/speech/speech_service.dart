@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'sherpa_chinese_voice_service.dart';
+import '../storage/app_preferences.dart';
+
 // --- AUDIO (native zh-CN text-to-speech) ---
 
 final FlutterTts _tts = FlutterTts();
@@ -102,6 +105,22 @@ Future<bool> initTts({bool showErrors = false}) async {
 
 Future<void> speak(String text) async {
   if (text.trim().isEmpty) return;
+  if (!kIsWeb) {
+    try {
+      final voiceService = SherpaChineseVoiceService.instance;
+      if (!await voiceService.isInstalled) {
+        _ttsHint('Đang tải mô hình giọng Sherpa ONNX lần đầu (~40 MB)...');
+      }
+      await voiceService.speak(
+        text,
+        speaker: AppPreferences.voiceSpeaker.value,
+      );
+    } on Object catch (error) {
+      debugPrint('Sherpa ONNX speech playback failed: $error');
+      _ttsHint('Không phát được giọng Sherpa ONNX: $error');
+    }
+    return;
+  }
   try {
     if (!await initTts(showErrors: true)) return;
     await _tts.stop();

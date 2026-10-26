@@ -191,7 +191,7 @@ class _NewsArticleReaderScreenState extends State<NewsArticleReaderScreen> {
         MediaQuery.sizeOf(context).width >= 900
             ? 'Bôi đen đoạn tiếng Trung để xem bản dịch ở bên phải.'
             : 'Bôi đen đoạn tiếng Trung để xem bản dịch bên dưới.',
-        style: const TextStyle(color: Colors.black54),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
       const SizedBox(height: 16),
       SelectableText(

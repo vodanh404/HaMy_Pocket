@@ -6,8 +6,6 @@ class ListeningScreen extends StatelessWidget {
   const ListeningScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const StudyMaterialScreen(
-    title: 'Luyện nghe',
-    materialTypes: {'audio'},
-  );
+  Widget build(BuildContext context) =>
+      const StudyMaterialScreen(title: 'Nghe và đọc', materialTypes: {'audio'});
 }

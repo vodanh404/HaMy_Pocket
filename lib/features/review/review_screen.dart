@@ -120,8 +120,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               FlipCard(
                 flipped: _flipped,
                 onTap: () => setState(() => _flipped = true),
-                front: cardFront(v),
-                back: cardBack(v),
+                front: cardFront(context, v),
+                back: cardBack(context, v),
               ),
               const SizedBox(height: 24),
               if (!_flipped)

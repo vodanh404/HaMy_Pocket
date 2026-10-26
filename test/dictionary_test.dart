@@ -70,6 +70,9 @@ void main() {
       level: 9,
     );
     expect(app.inScope(upperLevel, 7), isTrue);
+
+    await app.loadDictionary();
+    expect(app.builtIn, hasLength(11470));
   });
 
   test('loads valid persisted entries and repairs malformed or duplicate data', () async {
@@ -307,7 +310,8 @@ void main() {
           .where(
             (path) =>
                 (path.startsWith('assets/audio/') &&
-                    path.toLowerCase().endsWith('.mp3')) ||
+                    (path.toLowerCase().endsWith('.mp3') ||
+                        path.toLowerCase().endsWith('.pdf'))) ||
                 (path.startsWith('assets/documents/') &&
                     path.toLowerCase().endsWith('.pdf')),
           )
@@ -403,8 +407,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final audioHeading = find.text('File nghe');
-    final pdfHeading = find.text('File PDF');
+    final audioHeading = find.text('Phần nghe');
+    final pdfHeading = find.text('Đề nghe');
     expect(audioHeading, findsOneWidget);
     expect(pdfHeading, findsOneWidget);
     expect(

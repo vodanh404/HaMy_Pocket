@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/services/listening_exam_repository.dart';
 import '../../data/services/study_material_library.dart';
+import '../../services/speech/sherpa_chinese_voice_service.dart';
+import '../../services/storage/app_preferences.dart';
 import '../../shared/study.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -12,6 +15,64 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _voicePackReady = false;
+  bool _downloadingVoice = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshVoicePackStatus();
+  }
+
+  Future<void> _refreshVoicePackStatus() async {
+    final installed = await SherpaChineseVoiceService.instance.isInstalled;
+    if (mounted) setState(() => _voicePackReady = installed);
+  }
+
+  Future<void> _downloadVoicePack() async {
+    setState(() => _downloadingVoice = true);
+    try {
+      await SherpaChineseVoiceService.instance.downloadVoicePack();
+      if (!mounted) return;
+      setState(() => _voicePackReady = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã tải mô hình ba giọng đọc Sherpa ONNX.'),
+        ),
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không tải được mô hình giọng đọc: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _downloadingVoice = false);
+    }
+  }
+
+  Future<void> _setDarkMode(bool enabled) async {
+    try {
+      await AppPreferences.setDarkMode(enabled);
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không lưu được giao diện: $error')),
+      );
+    }
+  }
+
+  Future<void> _setVoiceSpeaker(int? speaker) async {
+    if (speaker == null) return;
+    try {
+      await AppPreferences.setVoiceSpeaker(speaker);
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không lưu được giọng đọc: $error')),
+      );
+    }
+  }
+
   Future<void> _showSyncDialog() async {
     final messenger = ScaffoldMessenger.of(context);
     final controller = TextEditingController(text: Store.createSyncCode());
@@ -116,7 +177,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Xóa toàn bộ dữ liệu người dùng?'),
         content: const Text(
-          'Thao tác này xóa tiến độ, từ cá nhân và tài liệu đã nhập. Không thể hoàn tác.',
+          'Thao tác này xóa tiến độ, từ cá nhân, tài liệu đã nhập và đáp án tự tạo. '
+          'Học liệu có sẵn trong ứng dụng sẽ được giữ lại. Không thể hoàn tác.',
         ),
         actions: [
           TextButton(
@@ -133,10 +195,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true) return;
     await Store.clearAll();
     await StudyMaterialLibrary.instance.clearImported();
+    await ListeningExamRepository.clearGeneratedDatabase();
     if (mounted) {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã xóa toàn bộ dữ liệu người dùng.')),
+        const SnackBar(
+          content: Text(
+            'Đã xóa dữ liệu đã nhập; học liệu có sẵn trong ứng dụng được giữ lại.',
+          ),
+        ),
       );
     }
   }
@@ -147,13 +214,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const _SettingsSection(
+        _SettingsSection(
           title: 'Âm thanh',
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: ValueListenableBuilder<int>(
+                valueListenable: AppPreferences.voiceSpeaker,
+                builder: (context, speaker, _) => DropdownButtonFormField<int>(
+                  initialValue: speaker,
+                  decoration: const InputDecoration(
+                    labelText: 'Giọng Sherpa tiếng Trung',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Giọng đọc 1')),
+                    DropdownMenuItem(value: 1, child: Text('Giọng đọc 2')),
+                    DropdownMenuItem(value: 2, child: Text('Giọng đọc 3')),
+                  ],
+                  onChanged: _setVoiceSpeaker,
+                ),
+              ),
+            ),
             ListTile(
-              leading: Icon(Icons.record_voice_over),
-              title: Text('Giọng đọc tiếng Trung'),
-              subtitle: Text('Dùng giọng zh-CN có sẵn trên thiết bị'),
+              leading: const Icon(Icons.download_outlined),
+              title: Text(
+                _voicePackReady
+                    ? 'Đã cài mô hình giọng đọc ngoại tuyến'
+                    : 'Mô hình giọng đọc ngoại tuyến (~40 MB)',
+              ),
+              subtitle: Text(
+                _downloadingVoice ? 'Đang tải...' : 'Tải lần đầu để dùng ba giọng Sherpa ngay cả khi ngoại tuyến',
+              ),
+              trailing: _downloadingVoice
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      tooltip: _voicePackReady
+                          ? 'Tải lại mô hình'
+                          : 'Tải mô hình',
+                      onPressed: _downloadVoicePack,
+                      icon: Icon(
+                        _voicePackReady ? Icons.check_circle : Icons.download,
+                      ),
+                    ),
             ),
             _SpeechTestTile(),
           ],
@@ -185,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.delete_outline),
               title: const Text('Xóa toàn bộ dữ liệu người dùng'),
               subtitle: const Text(
-                'Xóa tiến độ, từ cá nhân và tài liệu đã nhập',
+                'Xóa tiến độ, từ cá nhân và tài liệu đã nhập; giữ học liệu có sẵn',
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: _confirmDeleteData,
@@ -193,10 +300,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        const _SettingsSection(
+        _SettingsSection(
           title: 'Ứng dụng',
           children: [
-            ListTile(
+            ValueListenableBuilder<bool>(
+              valueListenable: AppPreferences.darkMode,
+              builder: (context, enabled, _) => SwitchListTile(
+                secondary: const Icon(Icons.dark_mode_outlined),
+                title: const Text('Giao diện tối'),
+                subtitle: const Text('Áp dụng cho toàn bộ ứng dụng'),
+                value: enabled,
+                onChanged: _setDarkMode,
+              ),
+            ),
+            const ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('HaMy_Pocket'),
               subtitle: Text('Từ vựng, ôn tập và luyện tập theo HSK'),

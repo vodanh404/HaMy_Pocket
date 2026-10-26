@@ -1,32 +1,76 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/widgets/feature_preview_screen.dart';
+import 'tone_practice_screen.dart';
 
 class SpeakingScreen extends StatelessWidget {
   const SpeakingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const FeaturePreviewScreen(
-    title: 'Luyện nói',
-    subtitle: 'Làm quen thanh điệu và tự tin nói tiếng Trung.',
-    icon: Icons.record_voice_over,
-    color: Colors.deepOrange,
-    activities: [
-      PreviewActivity(
-        icon: Icons.graphic_eq,
-        title: 'Luyện thanh điệu',
-        description: 'Phân biệt bốn thanh điệu và thanh nhẹ.',
-      ),
-      PreviewActivity(
-        icon: Icons.mic,
-        title: 'Nói theo mẫu',
-        description: 'Nghe câu mẫu rồi thực hành phát âm.',
-      ),
-      PreviewActivity(
-        icon: Icons.chat_bubble_outline,
-        title: 'Hội thoại ngắn',
-        description: 'Thực hành các tình huống giao tiếp quen thuộc.',
-      ),
-    ],
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Luyện nói')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Luyện phát âm tiếng Trung',
+          style: Theme.of(context).textTheme.headlineSmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Nghe mẫu ngoại tuyến, luyện bốn thanh điệu và xem đường cao độ giọng đọc.',
+          style: Theme.of(context).textTheme.bodyLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.graphic_eq,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Luyện thanh điệu',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Nghe từng thanh, ghi âm tối đa 6 giây và nhận phản hồi theo đường cao độ.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const TonePracticeScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.mic),
+                  label: const Text('Bắt đầu luyện'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Card(
+          child: ListTile(
+            leading: Icon(Icons.record_voice_over),
+            title: Text('Giọng đọc mẫu Sherpa ONNX'),
+            subtitle: Text(
+              'Chọn một trong ba speaker tiếng Phổ thông tại Cài đặt. '
+              'Mô hình được tải một lần và dùng ngoại tuyến.',
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }

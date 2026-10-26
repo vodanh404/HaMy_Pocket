@@ -158,14 +158,16 @@ class _TypingPracticeScreenState extends State<TypingPracticeScreen> {
           else ...[
             LinearProgressIndicator(
               value: (_index + 1) / _queue.length,
-              backgroundColor: Colors.grey.shade300,
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest,
             ),
             const SizedBox(height: 8),
             Text(
               'Câu ${_index + 1}/${_queue.length}  ·  Đúng $_correct',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -173,11 +175,14 @@ class _TypingPracticeScreenState extends State<TypingPracticeScreen> {
             Text(
               'Gõ từ tiếng Trung có nghĩa là:',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
             Card(
-              color: Colors.red.shade50,
+              color: Theme.of(context).colorScheme.secondaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(

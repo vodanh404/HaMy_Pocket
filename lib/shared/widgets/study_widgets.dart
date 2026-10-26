@@ -7,6 +7,7 @@ import '../../domain/models/vocab.dart';
 import '../../domain/services/learning_engine.dart';
 import '../../services/speech/speech_service.dart';
 import '../../services/storage/storage_service.dart';
+import '../../features/writing/handwriting_practice_screen.dart';
 
 Color _statusColor(Srs? s) => s == null
     ? Colors.grey
@@ -61,6 +62,7 @@ class FlipCard extends StatelessWidget {
         duration: const Duration(milliseconds: 400),
         builder: (context, value, _) {
           final isBack = value >= 90;
+          final colors = Theme.of(context).colorScheme;
           return Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
@@ -70,23 +72,26 @@ class FlipCard extends StatelessWidget {
                 ? Transform(
                     alignment: Alignment.center,
                     transform: Matrix4.identity()..rotateY(pi),
-                    child: _shell(Colors.red.shade50, back),
+                    child: _shell(context, colors.secondaryContainer, back),
                   )
-                : _shell(Colors.white, front),
+                : _shell(context, colors.surface, front),
           );
         },
       ),
     );
   }
 
-  Widget _shell(Color color, Widget child) => Container(
+  Widget _shell(BuildContext context, Color color, Widget child) => Container(
     width: double.infinity,
     height: 400,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: color,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.red.shade200, width: 2),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.outlineVariant,
+        width: 2,
+      ),
       boxShadow: const [
         BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 8)),
       ],
@@ -135,21 +140,25 @@ class ChipRow extends StatelessWidget {
   }
 }
 
-Widget _levelChip(int l) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-  decoration: BoxDecoration(
-    color: tierColor(l).shade50,
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Text(
-    levelLabel(l),
-    style: TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.bold,
-      color: tierColor(l).shade800,
+Widget _levelChip(BuildContext context, int l) {
+  final levelColor = tierColor(l);
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: dark ? levelColor.shade900 : levelColor.shade50,
+      borderRadius: BorderRadius.circular(12),
     ),
-  ),
-);
+    child: Text(
+      levelLabel(l),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: dark ? levelColor.shade100 : levelColor.shade800,
+      ),
+    ),
+  );
+}
 
 Widget _visual(Vocab v) {
   final emoji = Text(v.emoji, style: const TextStyle(fontSize: 64));
@@ -165,18 +174,19 @@ Widget _visual(Vocab v) {
         );
 }
 
-Widget speakerButton(String text, {double size = 30}) => IconButton(
-  icon: const Icon(Icons.volume_up),
-  iconSize: size,
-  color: Colors.red.shade700,
-  onPressed: () => speak(text),
-);
+Widget speakerButton(BuildContext context, String text, {double size = 30}) =>
+    IconButton(
+      icon: const Icon(Icons.volume_up),
+      iconSize: size,
+      color: Theme.of(context).colorScheme.primary,
+      onPressed: () => speak(text),
+    );
 
-Widget _exampleBox(Vocab v) => Container(
+Widget _exampleBox(BuildContext context, Vocab v) => Container(
   width: double.infinity,
   padding: const EdgeInsets.all(12),
   decoration: BoxDecoration(
-    color: Colors.white,
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
     borderRadius: BorderRadius.circular(12),
   ),
   child: Row(
@@ -197,22 +207,22 @@ Widget _exampleBox(Vocab v) => Container(
               v.exampleMeaning,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
             ),
           ],
         ),
       ),
-      speakerButton(v.example, size: 26),
+      speakerButton(context, v.example, size: 26),
     ],
   ),
 );
 
-Widget cardFront(Vocab v) => Column(
+Widget cardFront(BuildContext context, Vocab v) => Column(
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
-    _levelChip(v.level),
+    _levelChip(context, v.level),
     const SizedBox(height: 12),
     _visual(v),
     const SizedBox(height: 8),
@@ -222,17 +232,20 @@ Widget cardFront(Vocab v) => Column(
         v.hanzi,
         style: TextStyle(
           fontSize: 72,
-          color: Colors.grey.shade800,
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),
     ),
-    speakerButton(v.hanzi, size: 36),
-    const Text('Chạm để xem nghĩa', style: TextStyle(color: Colors.grey)),
+    speakerButton(context, v.hanzi, size: 36),
+    Text(
+      'Chạm để xem nghĩa',
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ),
   ],
 );
 
-Widget cardBack(Vocab v) => Column(
+Widget cardBack(BuildContext context, Vocab v) => Column(
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
     Row(
@@ -243,22 +256,28 @@ Widget cardBack(Vocab v) => Column(
             v.pinyin,
             style: TextStyle(
               fontSize: 32,
-              color: Colors.red.shade700,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        speakerButton(v.hanzi),
+        speakerButton(context, v.hanzi),
       ],
     ),
     Text(
       v.meaning,
       maxLines: 6,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(fontSize: 24, color: Colors.grey.shade800),
+      style: TextStyle(
+        fontSize: 24,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
       textAlign: TextAlign.center,
     ),
-    if (v.example.isNotEmpty) ...[const Divider(height: 28), _exampleBox(v)],
+    if (v.example.isNotEmpty) ...[
+      const Divider(height: 28),
+      _exampleBox(context, v),
+    ],
   ],
 );
 
@@ -266,11 +285,11 @@ Widget cardBack(Vocab v) => Column(
 Widget wordTile(BuildContext context, Vocab v) => Padding(
   padding: const EdgeInsets.only(bottom: 10),
   child: Material(
-    color: Colors.white,
+    color: Theme.of(context).colorScheme.surface,
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: BorderSide(color: Colors.grey.shade200),
+      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
     ),
     child: InkWell(
       onTap: () => showWordSheet(context, v),
@@ -300,7 +319,9 @@ Widget wordTile(BuildContext context, Vocab v) => Padding(
                             text: '  ${v.traditional}',
                             style: TextStyle(
                               fontSize: 15,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         TextSpan(
@@ -317,7 +338,9 @@ Widget wordTile(BuildContext context, Vocab v) => Padding(
                     v.meaning,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -328,8 +351,8 @@ Widget wordTile(BuildContext context, Vocab v) => Padding(
               color: _statusColor(Store.srs.value[v.id]),
             ),
             const SizedBox(width: 6),
-            _levelChip(v.level),
-            speakerButton(v.hanzi, size: 24),
+            _levelChip(context, v.level),
+            speakerButton(context, v.hanzi, size: 24),
             IconButton(
               tooltip: Store.isPersonal(v)
                   ? 'Xóa khỏi từ điển cá nhân'
@@ -359,7 +382,7 @@ void showWordSheet(BuildContext context, Vocab v) => showModalBottomSheet<void>(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _levelChip(v.level),
+          _levelChip(ctx, v.level),
           const SizedBox(height: 8),
           Text(v.emoji, style: const TextStyle(fontSize: 48)),
           FittedBox(
@@ -373,7 +396,9 @@ void showWordSheet(BuildContext context, Vocab v) => showModalBottomSheet<void>(
             Text(
               'Phồn thể: ${v.traditional}',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade700),
+              style: TextStyle(
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+              ),
             ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -383,12 +408,12 @@ void showWordSheet(BuildContext context, Vocab v) => showModalBottomSheet<void>(
                   v.pinyin,
                   style: TextStyle(
                     fontSize: 24,
-                    color: Colors.red.shade700,
+                    color: Theme.of(ctx).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              speakerButton(v.hanzi),
+              speakerButton(ctx, v.hanzi),
             ],
           ),
           Text(
@@ -398,8 +423,25 @@ void showWordSheet(BuildContext context, Vocab v) => showModalBottomSheet<void>(
           ),
           if (v.example.isNotEmpty) ...[
             const Divider(height: 28),
-            _exampleBox(v),
+            _exampleBox(ctx, v),
           ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.draw_outlined),
+              label: const Text('Luyện viết tay chữ Hán'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => HandwritingPracticeScreen(word: v),
+                  ),
+                );
+              },
+            ),
+          ),
           if (v.custom) ...[
             const SizedBox(height: 16),
             Row(

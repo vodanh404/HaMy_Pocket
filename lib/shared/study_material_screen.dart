@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import '../data/models/listening_exam.dart';
 import '../data/models/study_material.dart';
+import '../data/services/listening_exam_repository.dart';
 import '../data/services/study_material_library.dart';
 import '../services/storage/storage_service.dart';
 
@@ -64,6 +66,29 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
     }
   }
 
+  Future<void> _importDirectory() async {
+    setState(() => _importing = true);
+    try {
+      final directoryPath = await FilePicker.getDirectoryPath();
+      if (directoryPath == null || !mounted) return;
+      final count = await _library.importDirectory(directoryPath);
+      if (!mounted) return;
+      final message = count == 0
+          ? 'Không tìm thấy tệp PDF hoặc MP3 trong thư mục đã chọn.'
+          : 'Đã tự động quét và nhập $count tệp.';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } on PlatformException catch (error) {
+      _showImportError(error.message ?? error.code);
+    } on FileSystemException catch (error) {
+      _showImportError(error.message);
+    } on StateError catch (error) {
+      _showImportError(error.message);
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
   void _showImportError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +128,11 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
         appBar: AppBar(
           title: Text(widget.title),
           actions: [
+            IconButton(
+              tooltip: 'Quét thư mục học liệu',
+              onPressed: _importing ? null : _importDirectory,
+              icon: const Icon(Icons.folder_open_outlined),
+            ),
             IconButton(
               tooltip: 'Nhập tài liệu',
               onPressed: _importing ? null : _importMaterials,
@@ -297,10 +327,16 @@ class _AudioMaterialPlayerState extends State<AudioMaterialPlayer> {
   Duration _duration = Duration.zero;
   bool _playing = false;
   bool _started = false;
+  ExamSection _section = ExamSection.listening;
+  late final Future<ExamSectionPages?> _sectionPagesFuture;
 
   @override
   void initState() {
     super.initState();
+    final exercise = StudyMaterialLibrary.instance.exerciseFor(widget.material);
+    _sectionPagesFuture = exercise == null
+        ? Future.value(null)
+        : ListeningExamRepository.instance.sectionPagesFor(exercise);
     _player.onPositionChanged.listen((position) {
       if (mounted) setState(() => _position = position);
     });
@@ -377,154 +413,526 @@ class _AudioMaterialPlayerState extends State<AudioMaterialPlayer> {
   @override
   Widget build(BuildContext context) {
     final exercise = StudyMaterialLibrary.instance.exerciseFor(widget.material);
+    final hasWritingSection = (widget.material.level ?? 0) >= 3;
     final progressId =
         '${widget.material.type}:${widget.material.fileName.toLowerCase()}';
     return Scaffold(
       appBar: AppBar(title: Text(widget.material.title)),
-      body: Row(
+      body: Column(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'File nghe',
-                    style: Theme.of(context).textTheme.titleLarge,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: SegmentedButton<ExamSection>(
+              segments: [
+                const ButtonSegment(
+                  value: ExamSection.listening,
+                  icon: Icon(Icons.headphones),
+                  label: Text('Nghe'),
+                ),
+                const ButtonSegment(
+                  value: ExamSection.reading,
+                  icon: Icon(Icons.menu_book),
+                  label: Text('Đọc'),
+                ),
+                if (hasWritingSection)
+                  const ButtonSegment(
+                    value: ExamSection.writing,
+                    icon: Icon(Icons.edit_note),
+                    label: Text('Viết'),
                   ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.headphones,
-                                size: 48,
-                                color: Colors.blue,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                widget.material.title,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.material.fileName,
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Slider(
-                                value: _position.inMilliseconds
-                                    .clamp(
-                                      0,
-                                      _duration.inMilliseconds == 0
-                                          ? 1
-                                          : _duration.inMilliseconds,
-                                    )
-                                    .toDouble(),
-                                max: _duration.inMilliseconds == 0
-                                    ? 1
-                                    : _duration.inMilliseconds.toDouble(),
-                                onChanged: _duration == Duration.zero
-                                    ? null
-                                    : (value) => _player.seek(
-                                        Duration(milliseconds: value.round()),
-                                      ),
-                              ),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(_formatDuration(_position)),
-                                  Text(_formatDuration(_duration)),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              IconButton.filled(
-                                iconSize: 36,
-                                onPressed: _togglePlayback,
-                                icon: Icon(
-                                  _playing ? Icons.pause : Icons.play_arrow,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ValueListenableBuilder<Set<String>>(
-                                valueListenable: Store.completedMaterials,
-                                builder: (context, completedMaterials, _) {
-                                  final isCompleted = completedMaterials
-                                      .contains(progressId);
-                                  return OutlinedButton.icon(
-                                    onPressed: () => Store.setMaterialCompleted(
-                                      progressId,
-                                      !isCompleted,
-                                    ),
-                                    icon: Icon(
-                                      isCompleted
-                                          ? Icons.check_circle
-                                          : Icons.check_circle_outline,
-                                    ),
-                                    label: Text(
-                                      isCompleted
-                                          ? 'Đã hoàn thành'
-                                          : 'Đánh dấu hoàn thành',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
+              selected: {_section},
+              onSelectionChanged: (selection) =>
+                  setState(() => _section = selection.first),
             ),
           ),
-          const VerticalDivider(width: 1),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'File PDF',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  if (exercise != null) ...[
-                    Text(
-                      exercise.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  Expanded(
-                    child: exercise == null
-                        ? const Center(
-                            child: Text(
-                              'Chưa tìm thấy PDF tương ứng.\nNhập PDF có cùng mã bài nghe.',
-                              textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(switch (_section) {
+                          ExamSection.listening => 'Phần nghe',
+                          ExamSection.reading => 'Phần đọc hiểu',
+                          ExamSection.writing => 'Phần viết',
+                        }, style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.headphones,
+                                          size: 48,
+                                          color: Colors.blue,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          widget.material.title,
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          widget.material.fileName,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Slider(
+                                          value: _position.inMilliseconds
+                                              .clamp(
+                                                0,
+                                                _duration.inMilliseconds == 0
+                                                    ? 1
+                                                    : _duration.inMilliseconds,
+                                              )
+                                              .toDouble(),
+                                          max: _duration.inMilliseconds == 0
+                                              ? 1
+                                              : _duration.inMilliseconds
+                                                    .toDouble(),
+                                          onChanged: _duration == Duration.zero
+                                              ? null
+                                              : (value) => _player.seek(
+                                                  Duration(
+                                                    milliseconds: value.round(),
+                                                  ),
+                                                ),
+                                        ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(_formatDuration(_position)),
+                                            Text(_formatDuration(_duration)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        IconButton.filled(
+                                          iconSize: 36,
+                                          onPressed: _togglePlayback,
+                                          icon: Icon(
+                                            _playing
+                                                ? Icons.pause
+                                                : Icons.play_arrow,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ValueListenableBuilder<Set<String>>(
+                                          valueListenable:
+                                              Store.completedMaterials,
+                                          builder: (context, completedMaterials, _) {
+                                            final isCompleted =
+                                                completedMaterials.contains(
+                                                  progressId,
+                                                );
+                                            return OutlinedButton.icon(
+                                              onPressed: () =>
+                                                  Store.setMaterialCompleted(
+                                                    progressId,
+                                                    !isCompleted,
+                                                  ),
+                                              icon: Icon(
+                                                isCompleted
+                                                    ? Icons.check_circle
+                                                    : Icons
+                                                          .check_circle_outline,
+                                              ),
+                                              label: Text(
+                                                isCompleted
+                                                    ? 'Đã hoàn thành'
+                                                    : 'Đánh dấu hoàn thành',
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                ListeningAnswerForm(
+                                  material: widget.material,
+                                  section: _section,
+                                ),
+                              ],
                             ),
-                          )
-                        : exercise.localPath != null
-                        ? PdfViewer.file(exercise.localPath!)
-                        : PdfViewer.asset('assets/${exercise.source}'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(switch (_section) {
+                          ExamSection.listening => 'Đề nghe',
+                          ExamSection.reading => 'Bài đọc và đáp án',
+                          ExamSection.writing => 'Bài viết và đáp án',
+                        }, style: Theme.of(context).textTheme.titleLarge),
+                        if (exercise != null) ...[
+                          Text(
+                            exercise.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Expanded(
+                          child: exercise == null
+                              ? const Center(
+                                  child: Text(
+                                    'Chưa tìm thấy PDF tương ứng.\nNhập PDF có cùng mã bài nghe.',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                )
+                              : FutureBuilder<ExamSectionPages?>(
+                                  future: _sectionPagesFuture,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasError) {
+                                      return Center(
+                                        child: Text(
+                                          'Không thể xác định trang đề: ${snapshot.error}',
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.connectionState !=
+                                        ConnectionState.done) {
+                                      return const Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    }
+                                    final pages = snapshot.data;
+                                    final initialPage =
+                                        pages?.pageFor(_section) ??
+                                        switch (_section) {
+                                          ExamSection.listening => 2,
+                                          ExamSection.reading => 7,
+                                          ExamSection.writing => 7,
+                                        };
+                                    return exercise.localPath != null
+                                        ? PdfViewer.file(
+                                            exercise.localPath!,
+                                            key: ValueKey(
+                                              '${exercise.id}-$_section',
+                                            ),
+                                            initialPageNumber: initialPage,
+                                          )
+                                        : PdfViewer.asset(
+                                            'assets/${exercise.source}',
+                                            key: ValueKey(
+                                              '${exercise.id}-$_section',
+                                            ),
+                                            initialPageNumber: initialPage,
+                                          );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class ListeningAnswerForm extends StatefulWidget {
+  const ListeningAnswerForm({
+    super.key,
+    required this.material,
+    this.readingMode = false,
+    this.section,
+  });
+
+  final StudyMaterial material;
+  final bool readingMode;
+  final ExamSection? section;
+
+  @override
+  State<ListeningAnswerForm> createState() => _ListeningAnswerFormState();
+}
+
+class _ListeningAnswerFormState extends State<ListeningAnswerForm> {
+  late final Future<ListeningExam?> _examFuture;
+  final Map<String, String> _userAnswers = {};
+  bool _submitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _examFuture = ListeningExamRepository.instance.loadForAudio(
+      widget.material,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<ListeningExam?>(
+    future: _examFuture,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (snapshot.hasError) {
+        return _message('Không thể tải đáp án: ${snapshot.error}');
+      }
+      final exam = snapshot.data;
+      if (exam == null ||
+          exam.audio.toLowerCase() != widget.material.fileName.toLowerCase()) {
+        return _message(
+          'Chưa đọc được đáp án. Hãy ghép MP3 với PDF cùng mã đề có trang '
+          'đáp án; ứng dụng sẽ tự tạo JSON để chấm điểm.',
+        );
+      }
+      return _answerForm(
+        exam,
+        widget.section ??
+            (widget.readingMode ? ExamSection.reading : ExamSection.listening),
+      );
+    },
+  );
+
+  Widget _message(String message) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Text(message, textAlign: TextAlign.center),
+    ),
+  );
+
+  Widget _answerForm(ListeningExam exam, ExamSection section) {
+    final questionNumbers = exam.questionNumbersFor(section);
+    final sectionAnswers = exam.answersForSection(section);
+    final listeningAnswers = exam.answersForSection(ExamSection.listening);
+    final readingAnswers = exam.answersForSection(ExamSection.reading);
+    final writingAnswers = exam.answersForSection(ExamSection.writing);
+    final sectionTitle = switch (section) {
+      ExamSection.listening => 'Phần nghe',
+      ExamSection.reading => 'Phần đọc hiểu',
+      ExamSection.writing => 'Phần viết',
+    };
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(sectionTitle, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (_submitted)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      'Nghe: '
+                      '${_countCorrectAnswers(listeningAnswers)}'
+                      '/${exam.listeningQuestionCount} · Đọc: '
+                      '${_countCorrectAnswers(readingAnswers)}'
+                      '/${exam.readingQuestionCount}'
+                      '${exam.writingQuestionCount > 0 ? ' · Viết: ${_countCorrectAnswers(writingAnswers)}/${exam.writingQuestionCount}' : ''}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Tổng: '
+                      '${_countCorrectAnswers(exam.answers)}'
+                      '/${exam.questionCount}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  if (questionNumbers.length > sectionAnswers.length)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Không có đáp án chấm tự động cho '
+                        '${questionNumbers.length - sectionAnswers.length} câu trong phần này.',
+                      ),
+                    ),
+                ],
+              )
+            else if (questionNumbers.length > sectionAnswers.length)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '${questionNumbers.length - sectionAnswers.length} câu không có đáp án chấm tự động.',
+                ),
+              ),
+            for (final questionNumber in questionNumbers)
+              _question(exam, questionNumber, section),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: _submitted
+                  ? null
+                  : () => setState(() => _submitted = true),
+              child: const Text('Nộp bài'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _countCorrectAnswers(Map<String, String> expectedAnswers) =>
+      expectedAnswers.entries.where((entry) {
+        final userAnswer = ListeningExam.normalizeFreeResponse(
+          _userAnswers[entry.key] ?? '',
+        );
+        return entry.value
+            .split(RegExp(r'\s*[/／]\s*'))
+            .map(ListeningExam.normalizeFreeResponse)
+            .contains(userAnswer);
+      }).length;
+
+  Widget _question(
+    ListeningExam exam,
+    String questionNumber,
+    ExamSection section,
+  ) {
+    final correctAnswer = exam.answers[questionNumber];
+    final options = _optionsFor(
+      questionNumber,
+      correctAnswer,
+      extendedExam: exam.questionCount > 40,
+    );
+    final textResponse =
+        section == ExamSection.writing &&
+            (correctAnswer == null ||
+                ListeningExam.isFreeResponseAnswer(correctAnswer)) ||
+        correctAnswer != null &&
+            ListeningExam.isFreeResponseAnswer(correctAnswer);
+    final normalizedUserAnswer = ListeningExam.normalizeFreeResponse(
+      _userAnswers[questionNumber] ?? '',
+    );
+    final isCorrect =
+        correctAnswer != null &&
+        correctAnswer
+            .split(RegExp(r'\s*[/／]\s*'))
+            .map(ListeningExam.normalizeFreeResponse)
+            .contains(normalizedUserAnswer);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Câu $questionNumber'),
+          const SizedBox(height: 4),
+          if (textResponse)
+            TextField(
+              key: ValueKey('answer-$questionNumber'),
+              enabled: !_submitted,
+              onChanged: (value) =>
+                  setState(() => _userAnswers[questionNumber] = value),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: 'Nhập câu trả lời',
+                helperText: _submitted
+                    ? correctAnswer == null
+                          ? 'Tự đối chiếu với PDF; câu này không có đáp án mẫu.'
+                          : isCorrect
+                          ? 'Chính xác'
+                          : 'Đáp án: $correctAnswer'
+                    : null,
+                helperStyle: TextStyle(
+                  color: isCorrect
+                      ? Colors.green.shade800
+                      : Colors.red.shade800,
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 4,
+              children: [
+                for (final option in options)
+                  ChoiceChip(
+                    label: Text(option),
+                    selected: _userAnswers[questionNumber] == option,
+                    onSelected: _submitted
+                        ? null
+                        : (selected) {
+                            if (selected) {
+                              setState(
+                                () => _userAnswers[questionNumber] = option,
+                              );
+                            }
+                          },
+                    selectedColor: !_submitted || correctAnswer == null
+                        ? null
+                        : option.toLowerCase() == correctAnswer.toLowerCase()
+                        ? Colors.green.shade300
+                        : Colors.red.shade200,
+                  ),
+              ],
+            ),
+          if (_submitted && correctAnswer != null && !textResponse)
+            Text(
+              'Đáp án: $correctAnswer',
+              style: TextStyle(color: Colors.green.shade800),
+            ),
+          if (_submitted && correctAnswer == null && !textResponse)
+            const Text('Không có đáp án chấm tự động trong JSON.'),
+        ],
+      ),
+    );
+  }
+
+  List<String> _optionsFor(
+    String questionNumber,
+    String? correctAnswer, {
+    required bool extendedExam,
+  }) {
+    final question = int.parse(questionNumber);
+    final answerValue = correctAnswer;
+    final answer = answerValue?.toLowerCase();
+    if (answer == 'đúng' || answer == 'sai') {
+      return const ['Đúng', 'Sai'];
+    }
+    if (extendedExam) {
+      return const ['A', 'B', 'C', 'D', 'E', 'F'];
+    }
+    final options = question <= 5 || (question >= 21 && question <= 25)
+        ? ['Đúng', 'Sai']
+        : question <= 10
+        ? ['A', 'B', 'C']
+        : question <= 15
+        ? ['A', 'B', 'C', 'D', 'E', 'F']
+        : question <= 20
+        ? ['A', 'B', 'C']
+        : ['A', 'B', 'C', 'D', 'E', 'F'];
+    if (answer != null &&
+        !options.any((option) => option.toLowerCase() == answer)) {
+      options.add(answerValue!);
+    }
+    return options;
   }
 }
 

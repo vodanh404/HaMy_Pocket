@@ -139,7 +139,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         onPressed: () => setState(_c.clear),
                       ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -201,7 +203,11 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                           padding: const EdgeInsets.only(left: 4, bottom: 8),
                           child: Text(
                             '${results.length} từ',
-                            style: TextStyle(color: Colors.grey.shade700),
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                           ),
                         )
                       : wordTile(context, results[index - 1]),

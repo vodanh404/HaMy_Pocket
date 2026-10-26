@@ -109,9 +109,11 @@ class _ReadingScreenState extends State<ReadingScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              const Text(
+              Text(
                 'Chọn một tiêu đề để đọc bài báo và bôi đen đoạn tiếng Trung để dịch.',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 12),
               for (final feed in feeds) ...[

@@ -42,4 +42,47 @@ void main() {
       await expectLater(StudyMaterialLibrary.instance.load(), completes);
     },
   );
+
+  test(
+    'imports a folder automatically and clear removes only imported files',
+    () async {
+      final sourceDirectory = Directory(
+        '${supportDirectory.path}${Platform.pathSeparator}lesson_folder',
+      );
+      final nestedDirectory = Directory(
+        '${sourceDirectory.path}${Platform.pathSeparator}nested',
+      );
+      await nestedDirectory.create(recursive: true);
+      final audioPath =
+          '${sourceDirectory.path}${Platform.pathSeparator}H20999.mp3';
+      final pdfPath =
+          '${nestedDirectory.path}${Platform.pathSeparator}H20999.pdf';
+      await File(audioPath).writeAsBytes([1, 2, 3]);
+      await File(pdfPath).writeAsBytes([4, 5, 6]);
+      await File('${sourceDirectory.path}${Platform.pathSeparator}notes.txt')
+          .writeAsString('ignored');
+
+      final library = StudyMaterialLibrary.instance;
+      expect(await library.importDirectory(sourceDirectory.path), 2);
+      expect(
+        library.materials.where((material) => material.isImported),
+        hasLength(2),
+      );
+
+      await library.clearImported();
+
+      expect(
+        library.materials.where((material) => material.isImported),
+        isEmpty,
+      );
+      expect(
+        library.materials.any(
+          (material) =>
+              material.id == 'asset:audio/HSK1/H10901.mp3' &&
+              material.isAvailable,
+        ),
+        isTrue,
+      );
+    },
+  );
 }

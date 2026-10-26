@@ -15,6 +15,7 @@ class StudyMaterialLibrary extends ChangeNotifier {
   static const _assetDirectories = ['assets/audio/', 'assets/documents/'];
   static const _storageFileName = 'study_materials.json';
   static final _supportedExtensions = {'.pdf', '.mp3', '.jpg', '.jpeg', '.png'};
+  static const _supportedExamExtensions = {'.pdf', '.mp3'};
 
   final Map<String, StudyMaterial> _materials = {};
   bool _loaded = false;
@@ -119,6 +120,12 @@ class StudyMaterialLibrary extends ChangeNotifier {
   }
 
   Future<int> importFiles(List<PlatformFile> files) async {
+    return _importPaths(
+      files.map((file) => (name: file.name, path: file.path)).toList(),
+    );
+  }
+
+  Future<int> _importPaths(List<({String name, String? path})> files) async {
     await load();
     final directory = await getApplicationSupportDirectory();
     final storageDirectory = Directory(
@@ -156,6 +163,29 @@ class StudyMaterialLibrary extends ChangeNotifier {
     await _saveImportedMaterials(storageDirectory.parent);
     notifyListeners();
     return imported;
+  }
+
+  Future<int> importDirectory(String directoryPath) async {
+    final directory = Directory(directoryPath);
+    if (!await directory.exists()) {
+      throw FileSystemException(
+        'Không tìm thấy thư mục đã chọn.',
+        directoryPath,
+      );
+    }
+
+    final files = <({String name, String? path})>[];
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is! File ||
+          !_supportedExamExtensions.contains(_extension(entity.path))) {
+        continue;
+      }
+      files.add((
+        name: entity.path.split(Platform.pathSeparator).last,
+        path: entity.path,
+      ));
+    }
+    return _importPaths(files);
   }
 
   Future<void> clearImported() async {
