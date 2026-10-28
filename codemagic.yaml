@@ -1,0 +1,28 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+    scripts:
+      - name: Set up code signing settings
+        script: |
+          # Lệnh cấu hình build không cần chứng chỉ trả phí (Don't code sign)
+          xcode-project use-profiles --skip-signing
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Build Flutter iOS
+        script: |
+          flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
