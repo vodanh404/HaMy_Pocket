@@ -17,7 +17,7 @@ workflows:
       - name: Set up code signing settings
         script: |
           # Lệnh cấu hình build không cần chứng chỉ trả phí (Don't code sign)
-          xcode-project use-profiles --skip-signing
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
