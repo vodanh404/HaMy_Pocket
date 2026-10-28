@@ -44,7 +44,10 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
 
     expect(find.text('Câu 11'), findsOneWidget);
     expect(find.text('Câu 20'), findsOneWidget);
@@ -71,7 +74,7 @@ void main() {
   });
 
   test(
-    'loads complete listening and reading answer keys for bundled exams',
+    'loads complete listening and reading answer keys for indexed exams',
     () {
       final rawDatabase = jsonDecode(
         File('assets/audio/exam_database.json').readAsStringSync(),
@@ -99,19 +102,45 @@ void main() {
         expect(exam.answers, hasLength(40), reason: examCode);
         expect(exam.answers.containsKey('21'), isTrue, reason: examCode);
         expect(exam.answers.containsKey('40'), isTrue, reason: examCode);
-        expect(
-          File('assets/audio/HSK1/${exam.audio}').existsSync(),
-          isTrue,
-          reason: '$examCode audio',
-        );
-        expect(
-          File('assets/audio/HSK1/$examCode.pdf').existsSync(),
-          isTrue,
-          reason: '$examCode PDF',
-        );
+        expect(exam.audio, endsWith('.mp3'), reason: examCode);
       }
     },
   );
+
+  test('bundled database contains every scorable answer for each exam', () {
+    final rawDatabase = jsonDecode(
+      File('assets/audio/exam_database.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+
+    for (final entry in rawDatabase.entries) {
+      final exam = ListeningExam.fromJson(
+        entry.key,
+        entry.value as Map<String, dynamic>,
+      );
+      final level = int.parse(entry.key[1]);
+      final expectedQuestionCount = switch (level) {
+        1 => 40,
+        2 => 60,
+        3 => 80,
+        4 || 5 => 100,
+        6 => 101,
+        _ => fail('Unsupported exam level: ${entry.key}'),
+      };
+      final expectedAnswerCount = switch (level) {
+        5 => 98,
+        6 => 100,
+        _ => expectedQuestionCount,
+      };
+
+      expect(exam.questionCount, expectedQuestionCount, reason: entry.key);
+      expect(exam.answers, hasLength(expectedAnswerCount), reason: entry.key);
+      expect(exam.answers.keys.toSet(), {
+        for (var question = 1; question <= expectedAnswerCount; question++)
+          '$question',
+      }, reason: entry.key);
+      expect(exam.audio, endsWith('.mp3'), reason: entry.key);
+    }
+  });
 
   test('splits question ranges and scores answers from a JSON entry', () {
     final exam = ListeningExam.fromJson('H10901', {

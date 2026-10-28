@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/study_material.dart';
+import 'study_material_download_service.dart';
 
 class StudyMaterialLibrary extends ChangeNotifier {
   StudyMaterialLibrary._();
@@ -41,6 +42,24 @@ class StudyMaterialLibrary extends ChangeNotifier {
         source: source,
       );
       _materials[material.id] = material;
+    }
+
+    final downloadedDirectory =
+        await StudyMaterialDownloadService.instance.downloadedDirectory;
+    if (await downloadedDirectory.exists()) {
+      await for (final entity in downloadedDirectory.list(recursive: true)) {
+        if (entity is! File) continue;
+        final extension = _extension(entity.path);
+        if (!_supportedExamExtensions.contains(extension)) continue;
+        final fileName = entity.path.split(Platform.pathSeparator).last;
+        final material = _classifyImportedFile(
+          fileName,
+          entity.path,
+          extension,
+          id: 'downloaded:${entity.path}',
+        );
+        _materials[material.id] = material.copyWith(localPath: entity.path);
+      }
     }
 
     final savedFile = await _savedFile();
@@ -80,6 +99,13 @@ class StudyMaterialLibrary extends ChangeNotifier {
     }
 
     _loaded = true;
+  }
+
+  Future<void> refresh() async {
+    _materials.clear();
+    _loaded = false;
+    await load();
+    notifyListeners();
   }
 
   List<StudyMaterial> materialsOfType(String type) =>
@@ -148,8 +174,9 @@ class StudyMaterialLibrary extends ChangeNotifier {
       }
 
       final existing = _findByFileName(file.name);
-      final material =
-          existing ?? _classifyImportedFile(file.name, sourcePath, extension);
+      final material = existing == null || existing.isDownloaded
+          ? _classifyImportedFile(file.name, sourcePath, extension)
+          : existing;
       final safeName = file.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
       final destination = File(
         '${storageDirectory.path}${Platform.pathSeparator}'
@@ -207,10 +234,13 @@ class StudyMaterialLibrary extends ChangeNotifier {
 
   StudyMaterial? _findByFileName(String fileName) {
     final normalized = fileName.toLowerCase();
+    StudyMaterial? downloaded;
     for (final material in _materials.values) {
-      if (material.fileName.toLowerCase() == normalized) return material;
+      if (material.fileName.toLowerCase() != normalized) continue;
+      if (!material.isDownloaded) return material;
+      downloaded = material;
     }
-    return null;
+    return downloaded;
   }
 
   StudyMaterial _classifyImportedFile(

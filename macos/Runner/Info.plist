@@ -24,6 +24,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HaMy Pocket dùng micro để luyện phát âm và hội thoại tiếng Trung.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>HaMy Pocket dùng nhận dạng giọng nói của thiết bị để chuyển câu trả lời tiếng Trung thành văn bản.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>

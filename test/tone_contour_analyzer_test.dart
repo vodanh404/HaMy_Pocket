@@ -45,6 +45,23 @@ void main() {
     expect(falling.score, greaterThanOrEqualTo(70));
   });
 
+  test('does not pass a level contour as rising or falling', () {
+    final level = _synthesize((_) => 200);
+    final risingScore = analyzer.analyze(
+      samples: level,
+      sampleRate: sampleRate,
+      targetTone: 2,
+    );
+    final fallingScore = analyzer.analyze(
+      samples: level,
+      sampleRate: sampleRate,
+      targetTone: 4,
+    );
+
+    expect(risingScore.score, lessThan(50));
+    expect(fallingScore.score, lessThan(50));
+  });
+
   test('returns no score when the recording is too short or unvoiced', () {
     final result = analyzer.analyze(
       samples: List<double>.filled(sampleRate ~/ 10, 0),

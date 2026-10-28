@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -29,6 +28,18 @@ void main() {
             'No mock for ${call.method} on ${pathProviderChannel.name}',
           );
         });
+    for (final examCode in ['H20901', 'H31001', 'H41001', 'H51001', 'H61001']) {
+      final level = examCode[1];
+      final source = File('assets/audio/HSK$level/$examCode.pdf');
+      final destination = File(
+        '${supportDirectory.path}${Platform.pathSeparator}'
+        'downloaded_study_materials${Platform.pathSeparator}audio'
+        '${Platform.pathSeparator}HSK$level${Platform.pathSeparator}'
+        '$examCode.pdf',
+      );
+      await destination.parent.create(recursive: true);
+      await source.copy(destination.path);
+    }
     Pdfrx.cacheDirectoryPath = supportDirectory.path;
     await StudyMaterialLibrary.instance.load();
   });
@@ -39,113 +50,66 @@ void main() {
     await supportDirectory.delete(recursive: true);
   });
 
-  test(
-    'generates and persists answer JSON from detected HSK2 and HSK3 PDFs',
-    () async {
-      final generatedFile = File(
-        '${supportDirectory.path}${Platform.pathSeparator}'
-        'generated_exam_database.json',
+  test('loads complete bundled answer keys for HSK2 and HSK3 exams', () async {
+    for (final testCase in [
+      (
+        examCode: 'H20901',
+        level: 2,
+        questions: 60,
+        listeningQuestions: 35,
+        readingQuestions: 25,
+        writingQuestions: 0,
+      ),
+      (
+        examCode: 'H31001',
+        level: 3,
+        questions: 80,
+        listeningQuestions: 40,
+        readingQuestions: 30,
+        writingQuestions: 10,
+      ),
+    ]) {
+      final audio = StudyMaterial(
+        id: 'asset:audio/HSK${testCase.level}/${testCase.examCode}.mp3',
+        title: testCase.examCode,
+        fileName: '${testCase.examCode}.mp3',
+        type: 'audio',
+        category: 'listening',
+        level: testCase.level,
+        source: 'audio/HSK${testCase.level}/${testCase.examCode}.mp3',
       );
-      await generatedFile.writeAsString(
-        jsonEncode({
-          'H31001': {
-            'pdf_reference': 'assets/audio/HSK3/H31001.pdf',
-            'exam': {
-              'audio': 'H31001.mp3',
-              'listening_question_count': 40,
-              'question_count': 70,
-              'answers': {'1': 'A', '70': 'C'},
-            },
-          },
-        }),
-      );
-      for (final testCase in [
-        (
-          examCode: 'H20901',
-          level: 2,
-          questions: 60,
-          listeningQuestions: 35,
-          readingQuestions: 25,
-          writingQuestions: 0,
-        ),
-        (
-          examCode: 'H31001',
-          level: 3,
-          questions: 80,
-          listeningQuestions: 40,
-          readingQuestions: 30,
-          writingQuestions: 10,
-        ),
-      ]) {
-        final audio = StudyMaterial(
-          id: 'asset:audio/HSK${testCase.level}/${testCase.examCode}.mp3',
-          title: testCase.examCode,
-          fileName: '${testCase.examCode}.mp3',
-          type: 'audio',
-          category: 'listening',
-          level: testCase.level,
-          source: 'audio/HSK${testCase.level}/${testCase.examCode}.mp3',
-        );
-        final exam = await ListeningExamRepository.instance.loadForAudio(audio);
+      final exam = await ListeningExamRepository.instance.loadForAudio(audio);
 
-        expect(exam, isNotNull, reason: testCase.examCode);
-        expect(
-          exam!.questionCount,
-          testCase.questions,
-          reason: testCase.examCode,
-        );
-        expect(
-          exam.listeningQuestionCount,
-          testCase.listeningQuestions,
-          reason: testCase.examCode,
-        );
-        expect(
-          exam.answers.length,
-          greaterThanOrEqualTo(testCase.listeningQuestions),
-        );
-        expect(
-          exam.readingQuestionCount,
-          testCase.readingQuestions,
-          reason: testCase.examCode,
-        );
-        expect(
-          exam.answersForSection(ExamSection.reading),
-          isNotEmpty,
-          reason: testCase.examCode,
-        );
-        expect(
-          exam.questionNumbersFor(ExamSection.writing),
-          hasLength(testCase.writingQuestions),
-          reason: testCase.examCode,
-        );
-        expect(exam.answers['1'], isNotEmpty);
-      }
-
-      expect(generatedFile.existsSync(), isTrue);
-      final generated =
-          jsonDecode(generatedFile.readAsStringSync()) as Map<String, dynamic>;
-      expect(generated.keys, containsAll(['H20901', 'H31001']));
-
-      final cached = generated['H31001']! as Map<String, dynamic>;
-      expect(cached['parser_version'], 3);
-      final cachedExam = ListeningExam.fromJson(
-        'H31001',
-        cached['exam']! as Map<String, dynamic>,
-      );
-      expect(cachedExam.answers['35'], isNotNull);
-      expect(cachedExam.answers['36'], isNotNull);
-      expect(cachedExam.answers['71'], isNotEmpty);
-      expect(cachedExam.answers['80'], isNotEmpty);
+      expect(exam, isNotNull, reason: testCase.examCode);
       expect(
-        ListeningExam.isFreeResponseAnswer(cachedExam.answers['71']!),
-        isTrue,
+        exam!.questionCount,
+        testCase.questions,
+        reason: testCase.examCode,
       );
       expect(
-        ListeningExam.isFreeResponseAnswer(cachedExam.answers['70']!),
-        isFalse,
+        exam.listeningQuestionCount,
+        testCase.listeningQuestions,
+        reason: testCase.examCode,
       );
-    },
-  );
+      expect(exam.answers, hasLength(testCase.questions));
+      expect(
+        exam.readingQuestionCount,
+        testCase.readingQuestions,
+        reason: testCase.examCode,
+      );
+      expect(
+        exam.answersForSection(ExamSection.reading),
+        isNotEmpty,
+        reason: testCase.examCode,
+      );
+      expect(
+        exam.questionNumbersFor(ExamSection.writing),
+        hasLength(testCase.writingQuestions),
+        reason: testCase.examCode,
+      );
+      expect(exam.answers['1'], isNotEmpty);
+    }
+  });
 
   test('splits bundled HSK4 through HSK6 exams into three sections', () async {
     for (final testCase in [
@@ -186,7 +150,11 @@ void main() {
       final exam = await ListeningExamRepository.instance.loadForAudio(audio);
 
       expect(exam, isNotNull, reason: testCase.examCode);
-      expect(exam!.questionCount, testCase.questions, reason: testCase.examCode);
+      expect(
+        exam!.questionCount,
+        testCase.questions,
+        reason: testCase.examCode,
+      );
       expect(
         exam.listeningQuestionCount,
         testCase.listening,
@@ -224,7 +192,9 @@ void main() {
 
       final pdf = StudyMaterialLibrary.instance.exerciseFor(audio);
       expect(pdf, isNotNull, reason: testCase.examCode);
-      final pages = await ListeningExamRepository.instance.sectionPagesFor(pdf!);
+      final pages = await ListeningExamRepository.instance.sectionPagesFor(
+        pdf!,
+      );
       expect(pages.reading, greaterThan(pages.listening));
       expect(pages.writing, greaterThan(pages.reading));
     }

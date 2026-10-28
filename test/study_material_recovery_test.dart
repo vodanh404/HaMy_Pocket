@@ -23,6 +23,15 @@ void main() {
             'No mock for ${call.method} on ${pathProviderChannel.name}',
           );
         });
+    final downloadedAudio = File(
+      '${supportDirectory.path}${Platform.pathSeparator}'
+      'downloaded_study_materials${Platform.pathSeparator}audio'
+      '${Platform.pathSeparator}HSK1${Platform.pathSeparator}H10901.mp3',
+    );
+    await downloadedAudio.parent.create(recursive: true);
+    await downloadedAudio.writeAsBytes([1, 2, 3]);
+    await File(downloadedAudio.path.replaceFirst('.mp3', '.pdf'))
+        .writeAsBytes([4, 5, 6]);
   });
 
   tearDownAll(() async {
@@ -78,7 +87,10 @@ void main() {
       expect(
         library.materials.any(
           (material) =>
-              material.id == 'asset:audio/HSK1/H10901.mp3' &&
+              material.id.startsWith('downloaded:') &&
+              material.fileName == 'H10901.mp3' &&
+              material.isDownloaded &&
+              !material.isImported &&
               material.isAvailable,
         ),
         isTrue,

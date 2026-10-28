@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'conversation_topics_screen.dart';
 import 'tone_practice_screen.dart';
 
 class SpeakingScreen extends StatelessWidget {
@@ -12,13 +13,13 @@ class SpeakingScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Luyện phát âm tiếng Trung',
+          'Luyện nói tiếng Trung',
           style: Theme.of(context).textTheme.headlineSmall,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Nghe mẫu ngoại tuyến, luyện bốn thanh điệu và xem đường cao độ giọng đọc.',
+          'Luyện thanh điệu hoặc thực hành hội thoại với AI theo chủ đề.',
           style: Theme.of(context).textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
@@ -54,6 +55,45 @@ class SpeakingScreen extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.mic),
                   label: const Text('Bắt đầu luyện'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.forum_outlined,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Luyện nói và chat theo chủ đề',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Thực hành giới thiệu bản thân, gọi món, du lịch, mua sắm '
+                  'và sinh hoạt hằng ngày với Qwen chạy trên thiết bị.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ConversationTopicsScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.chat),
+                  label: const Text('Chọn chủ đề'),
                 ),
               ],
             ),

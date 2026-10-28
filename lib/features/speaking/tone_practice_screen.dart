@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:record/record.dart';
 
 import '../../services/speech/speech_service.dart';
@@ -133,6 +133,9 @@ class _TonePracticeScreenState extends State<TonePracticeScreen> {
         sampleRate: _sampleRate,
         targetTone: _item.tone,
       );
+      if (result.pitchContour.isNotEmpty) {
+        unawaited(HapticFeedback.mediumImpact());
+      }
       setState(() {
         _isRecording = false;
         _result = result;
@@ -148,6 +151,7 @@ class _TonePracticeScreenState extends State<TonePracticeScreen> {
   }
 
   void _selectTone(int index) {
+    unawaited(HapticFeedback.selectionClick());
     setState(() {
       _toneIndex = index;
       _result = null;

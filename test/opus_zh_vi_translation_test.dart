@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,29 @@ import 'package:hamy_poket/data/services/opus_zh_vi_translation_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory supportDirectory;
+  const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+
+  setUpAll(() async {
+    supportDirectory = await Directory.systemTemp.createTemp(
+      'hamy_pocket_opus_test_',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async {
+          if (call.method == 'getApplicationSupportDirectory') {
+            return supportDirectory.path;
+          }
+          throw MissingPluginException(
+            'No mock for ${call.method} on ${pathProviderChannel.name}',
+          );
+        });
+  });
+
+  tearDownAll(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, null);
+    await supportDirectory.delete(recursive: true);
+  });
 
   test('SentencePiece assets encode and decode Chinese', () async {
     final data = await rootBundle.load('assets/opus_zh_vi_onnx/source.spm');
@@ -122,14 +146,29 @@ void main() {
     },
   );
 
-  test('translates a complete Chinese sentence', () async {
-    const sentence = '我今天早上去了北京，因为我想看看天安门。';
-    final translation = await OpusZhViTranslationService.instance.translate(
-      sentence,
-    );
+  test(
+    'asks users to download the optional model before translating',
+    () async {
+      final service = OpusZhViTranslationService.instance;
 
-    expect(translation.split(RegExp(r'\s+')).length, greaterThan(5));
-    expect(translation, contains('Bắc Kinh'));
-    expect(translation, contains('sáng nay'));
-  }, timeout: const Timeout(Duration(minutes: 3)));
+      expect(await service.isModelDownloaded, isFalse);
+      await expectLater(service.translate('你好'), throwsStateError);
+    },
+  );
+
+  test(
+    'translates a complete Chinese sentence',
+    () async {
+      const sentence = '我今天早上去了北京，因为我想看看天安门。';
+      final translation = await OpusZhViTranslationService.instance.translate(
+        sentence,
+      );
+
+      expect(translation.split(RegExp(r'\s+')).length, greaterThan(5));
+      expect(translation, contains('Bắc Kinh'));
+      expect(translation, contains('sáng nay'));
+    },
+    skip: 'Requires downloading the optional ONNX pack.',
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }

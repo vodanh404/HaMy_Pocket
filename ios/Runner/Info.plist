@@ -27,7 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>HaMy Pocket dùng micro để phân tích đường cao độ khi bạn luyện thanh điệu tiếng Trung.</string>
+	<string>HaMy Pocket dùng micro để luyện phát âm và hội thoại tiếng Trung.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>HaMy Pocket dùng nhận dạng giọng nói của thiết bị để chuyển câu trả lời tiếng Trung thành văn bản.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

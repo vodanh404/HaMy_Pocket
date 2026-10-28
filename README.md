@@ -9,11 +9,11 @@
 - `lib/services/`: đọc phát âm, âm thanh và lưu tiến độ/từ cá nhân.
 - `lib/features/`: màn hình bài học, nghe, nói, đọc báo, viết, từ vựng, ôn tập, kiểm tra, từ điển và cài đặt.
 - `lib/shared/`: widget dùng chung và các thẻ điều hướng tính năng.
-- `assets/data/`, `assets/library/`, `assets/audio/`, `assets/documents/`, `assets/images/` và `assets/archives/`: dữ liệu từ điển, danh mục và học liệu được phân loại theo loại tệp. Các thư mục `Tổng hợp .../` bên dưới từng nhóm giữ thông tin nguồn.
+- `assets/data/`, `assets/library/` và `assets/images/`: dữ liệu nền tảng cần có ngay khi mở ứng dụng. Chỉ mục đáp án đề thi nằm tại `assets/audio/exam_database.json`; audio, PDF và mô hình lớn được tải riêng.
 
-Màn hình **Luyện nghe và đọc** tự nhận diện MP3 và PDF trong `assets/audio/`, cùng PDF trong `assets/documents/`. Khi tên MP3 và PDF có chung mã đề (ví dụ `H10901.mp3` và `H10901.pdf`), chuyển giữa hai phần **Nghe** và **Đọc** sẽ mở đúng phần câu hỏi và trang tương ứng trong PDF. Nếu đề chưa có trong `assets/audio/exam_database.json`, ứng dụng tự đọc đáp án từ PDF, tạo JSON trong bộ nhớ ứng dụng và dùng đáp án đó để chấm; câu trả lời chữ (như phần viết HSK3) dùng ô nhập thay vì lựa chọn A–F. Có thể đóng gói học liệu mới vào assets (hiển thị sau lần build tiếp theo), chọn **Quét thư mục học liệu** để tự nhập các MP3/PDF trong thư mục và thư mục con, hoặc dùng **Nhập tài liệu** để chọn tệp riêng. Các tệp RAR cần giải nén trước khi nhập. Xóa dữ liệu người dùng chỉ xóa tài liệu đã nhập và JSON tự tạo; học liệu đóng gói sẵn vẫn được giữ lại.
+Trang chủ có mục **Tải thêm dữ liệu và AI**. Từ đây có thể tải riêng audio/PDF HSK 1–6 từ kho GitHub LFS `vodanh404/data_HaMy_Pocket`, mô hình dịch và mô hình chat; tiến độ tải được hiển thị và các gói lưu trong vùng dữ liệu ứng dụng để dùng ngoại tuyến. Từ điển và chỉ mục đáp án đề thi vẫn nằm trong bộ cài. Luyện nghe/đọc chỉ hiển thị các tài liệu đã tải hoặc do người dùng nhập. Khi tên MP3 và PDF có chung mã đề (ví dụ `H10901.mp3` và `H10901.pdf`), chuyển giữa hai phần **Nghe** và **Đọc** sẽ mở đúng câu hỏi và trang PDF. Nếu đề chưa có trong `assets/audio/exam_database.json`, ứng dụng tự đọc đáp án từ PDF, tạo JSON trong bộ nhớ ứng dụng và dùng đáp án đó để chấm.
 
-Thư viện quét `AssetManifest` của Flutter thay vì phụ thuộc `assets/library/catalog.json`, vì vậy các mục cũ trỏ tới tệp đã đổi tên hoặc xóa không gây lỗi khi mở ứng dụng. Hai thư mục `assets/audio/` và `assets/documents/` được đăng ký cố định trong `pubspec.yaml`; chỉ cần đặt học liệu vào đúng thư mục rồi tạo lại gói ứng dụng.
+Thư viện tiếp tục quét `AssetManifest` cho học liệu được đóng gói nhỏ, đồng thời tìm các tệp đã tải trong vùng dữ liệu ứng dụng; không cần đóng gói audio/PDF vào app. Người dùng cũng có thể chọn **Quét thư mục học liệu** để nhập MP3/PDF trong thư mục và thư mục con, hoặc **Nhập tài liệu** để chọn tệp riêng. Các tệp RAR cần giải nén trước khi nhập. Xóa dữ liệu người dùng chỉ xóa tài liệu đã nhập và JSON tự tạo; gói tải thêm được giữ lại.
 
 `lib/main.dart` là điểm vào ứng dụng và giữ export tương thích cho các API dữ liệu đang được test sử dụng.
 
@@ -33,9 +33,11 @@ Mục **Luyện nói** có bài tập bốn thanh với mẫu phát âm Sherpa O
 
 Trong **Cài đặt**, chọn một trong ba speaker tiếng Phổ thông Sherpa. Gói VITS lượng tử hóa (khoảng 40 MB) được tải khi người dùng yêu cầu phát mẫu lần đầu; sau đó có thể phát ngoại tuyến. Cùng mục cài đặt có công tắc **Giao diện tối**, lựa chọn giao diện được lưu trên thiết bị.
 
+Trong **Luyện nói**, chọn **Hội thoại theo chủ đề** để chat hoặc luyện nói về giới thiệu bản thân, nhà hàng, du lịch, mua sắm và sinh hoạt hằng ngày. Mô hình Qwen2.5-0.5B-Instruct GGUF Q4_K_M (khoảng 491 MB) có thể tải từ trang **Dữ liệu và AI** hoặc khi mở hội thoại lần đầu; suy luận sau đó chạy cục bộ và ngoại tuyến. Nút micro dùng dịch vụ nhận dạng tiếng Trung của hệ điều hành, có thể cần mạng; bản ghi âm không được gửi đến mô hình Qwen, chỉ văn bản nhận dạng sau khi người dùng gửi được đưa vào hội thoại.
+
 ## Dịch Trung–Việt
 
-Tính năng dịch chạy ngoại tuyến bằng model `assets/opus_zh_vi_onnx` (Trung → Việt). Model ONNX và tokenizer cần được đóng gói cùng ứng dụng; dung lượng model gốc lớn nên bản cài đặt cũng sẽ tăng đáng kể.
+Tính năng dịch chạy ngoại tuyến bằng OPUS-MT Trung → Việt. Tokenizer nhẹ được đóng gói cùng ứng dụng; hai model ONNX int8 (khoảng 230 MB) tải từ [Hugging Face](https://huggingface.co/R4kSo1997/opus-mt-zh-vi-onnx-int8) khi người dùng chọn trong **Dữ liệu và AI**.
 
 ## Đọc báo
 

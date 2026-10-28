@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/services/listening_exam_repository.dart';
 import '../../data/services/study_material_library.dart';
+import 'download_center_screen.dart';
 import '../../services/speech/sherpa_chinese_voice_service.dart';
 import '../../services/storage/app_preferences.dart';
 import '../../shared/study.dart';
@@ -269,6 +270,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _SettingsSection(
           title: 'Dữ liệu học tập',
           children: [
+            ListTile(
+              leading: const Icon(Icons.cloud_download_outlined),
+              title: const Text('Dữ liệu và AI tải thêm'),
+              subtitle: const Text(
+                'Quản lý audio, PDF và các mô hình chạy ngoại tuyến',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const DownloadCenterScreen(),
+                ),
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.menu_book),
               title: const Text('Từ điển ngoại tuyến'),

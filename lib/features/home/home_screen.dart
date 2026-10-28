@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../vocabulary/vocabulary_screens.dart';
+import '../settings/download_center_screen.dart';
 import '../../shared/study.dart';
 
 // --- SCREEN 1: HOME (HSK 1-9 roadmap) ---
@@ -208,6 +209,31 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             _summary(pending, learned, words.length),
+            const SizedBox(height: 12),
+            Card(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.cloud_download_outlined,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                title: const Text(
+                  'Tải thêm dữ liệu và AI',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text(
+                  'Chọn gói audio, đề thi hoặc mô hình AI cần dùng',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const DownloadCenterScreen(),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 8),

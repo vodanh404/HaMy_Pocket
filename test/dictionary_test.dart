@@ -300,44 +300,24 @@ void main() {
   });
 
   test(
-    'detects listening and exercise files from the asset manifest',
+    'keeps large audio and PDF learning materials out of app assets',
     () async {
       final library = StudyMaterialLibrary.instance;
       await library.load();
       final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      final expectedPaths = assetManifest
-          .listAssets()
-          .where(
-            (path) =>
-                (path.startsWith('assets/audio/') &&
-                    (path.toLowerCase().endsWith('.mp3') ||
-                        path.toLowerCase().endsWith('.pdf'))) ||
-                (path.startsWith('assets/documents/') &&
-                    path.toLowerCase().endsWith('.pdf')),
-          )
-          .toSet();
-      final detectedPaths = library.materials
-          .where((material) => material.source != null)
-          .map((material) => 'assets/${material.source}')
-          .toSet();
 
-      expect(detectedPaths, expectedPaths);
       expect(
-        library.materialsOfType('audio').length,
-        expectedPaths
-            .where((path) => path.toLowerCase().endsWith('.mp3'))
-            .length,
+        assetManifest.listAssets().where(
+          (path) =>
+              (path.startsWith('assets/audio/') ||
+                  path.startsWith('assets/documents/')) &&
+              (path.toLowerCase().endsWith('.mp3') ||
+                  path.toLowerCase().endsWith('.pdf')),
+        ),
+        isEmpty,
       );
-      expect(
-        library.materialsOfType('pdf').length,
-        expectedPaths
-            .where((path) => path.toLowerCase().endsWith('.pdf'))
-            .length,
-      );
-      expect(
-        library.materials.every((material) => material.isAvailable),
-        isTrue,
-      );
+      expect(library.materialsOfType('audio'), isEmpty);
+      expect(library.materialsOfType('pdf'), isEmpty);
     },
   );
 
@@ -405,7 +385,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     final audioHeading = find.text('Phần nghe');
     final pdfHeading = find.text('Đề nghe');

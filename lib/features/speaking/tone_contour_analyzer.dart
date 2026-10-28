@@ -54,11 +54,7 @@ class ToneContourAnalyzer {
     final rise = middleToLate;
     final score = switch (targetTone) {
       1 => _score(1 - (earlyToLate.abs() * 80) - (wholeRange * 60)),
-      2 => _score(
-        earlyToLate >= 0
-            ? 0.65 + (math.min(earlyToLate, 0.6) * 0.55)
-            : 0.65 + (earlyToLate * 1.2),
-      ),
+      2 => _score(earlyToLate >= 0 ? earlyToLate / 0.4 : 0),
       3 => _score(
         dip >= 0.08 && rise >= 0.05
             ? 0.70 + (math.min(dip + rise, 0.45) * 0.60)
@@ -66,16 +62,22 @@ class ToneContourAnalyzer {
                   (math.max(0, 0.08 - dip) * 2) -
                   (math.max(0, 0.05 - rise) * 2),
       ),
-      4 => _score(
-        earlyToLate <= 0
-            ? 0.65 + (math.min(-earlyToLate, 0.6) * 0.55)
-            : 0.65 - (earlyToLate * 1.2),
-      ),
+      4 => _score(earlyToLate <= 0 ? -earlyToLate / 0.4 : 0),
       _ => 0,
     };
-    final feedback = score >= 70
-        ? 'Đường cao độ khá gần thanh $targetTone. Hãy nghe mẫu rồi thử lại để ổn định hơn.'
-        : 'Đường cao độ chưa giống thanh $targetTone. Nghe mẫu và chú ý hướng lên/xuống của giọng.';
+    final feedback = switch (targetTone) {
+      2 when earlyToLate < 0.12 =>
+        'Thanh 2 chưa đi lên đủ rõ. Hãy nâng cao độ đều từ đầu đến cuối.',
+      3 when dip < 0.08 =>
+        'Thanh 3 cần hạ giọng sâu hơn ở giữa âm tiết trước khi nâng lên.',
+      3 when rise < 0.05 =>
+        'Thanh 3 đã hạ giọng, nhưng cần nâng cao độ rõ hơn ở cuối âm tiết.',
+      4 when earlyToLate > -0.12 => 'Thanh 4 chưa đi xuống đủ rõ. Hãy bắt đầu cao hơn rồi hạ giọng dứt khoát.',
+      _ when score >= 70 =>
+        'Đường cao độ khá gần thanh $targetTone. Hãy nghe mẫu rồi thử lại để ổn định hơn.',
+      _ =>
+        'Đường cao độ chưa giống thanh $targetTone. Nghe mẫu và chú ý hướng lên/xuống của giọng.',
+    };
     return ToneContourResult(
       score: score,
       pitchContour: List.unmodifiable(pitches),

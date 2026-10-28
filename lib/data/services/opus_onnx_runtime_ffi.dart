@@ -1,13 +1,10 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:onnxruntime/onnxruntime.dart';
-import 'package:path_provider/path_provider.dart';
 
-const _encoderAsset = 'assets/opus_zh_vi_onnx/encoder_model.onnx';
-const _decoderAsset = 'assets/opus_zh_vi_onnx/decoder_model.onnx';
+import 'opus_model_download_service.dart';
+
 const _decoderStartTokenId = 65000;
 const _padTokenId = 65000;
 const _eosTokenId = 0;
@@ -58,8 +55,14 @@ class _OpusRuntime {
       ..setIntraOpNumThreads(2)
       ..setInterOpNumThreads(1);
     try {
-      encoder = await _loadSession(_encoderAsset, options);
-      decoder = await _loadSession(_decoderAsset, options);
+      final modelService = OpusModelDownloadService.instance;
+      if (!await modelService.isInstalled) {
+        throw StateError(
+          'Hãy tải mô hình dịch Trung–Việt trong mục Dữ liệu và AI.',
+        );
+      }
+      encoder = OrtSession.fromFile(await modelService.encoderFile, options);
+      decoder = OrtSession.fromFile(await modelService.decoderFile, options);
     } on Object {
       encoder?.release();
       decoder?.release();
@@ -318,41 +321,3 @@ final _runtime = _OpusRuntime();
 
 Future<List<int>> runOpusOnnx(List<int> sourceIds) =>
     _runtime.translate(sourceIds);
-
-Future<OrtSession> _loadSession(
-  String assetPath,
-  OrtSessionOptions options,
-) async {
-  if (Platform.isWindows) {
-    final data = await rootBundle.load(assetPath);
-    final bytes = data.buffer.asUint8List(
-      data.offsetInBytes,
-      data.lengthInBytes,
-    );
-    return OrtSession.fromBuffer(bytes, options);
-  }
-
-  return OrtSession.fromFile(await _modelFile(assetPath), options);
-}
-
-Future<File> _modelFile(String assetPath) async {
-  final directory = await getApplicationSupportDirectory();
-  final modelDirectory = Directory(
-    '${directory.path}${Platform.pathSeparator}opus_zh_vi_onnx',
-  );
-  await modelDirectory.create(recursive: true);
-  final fileName = assetPath.split('/').last;
-  final destination = File(
-    '${modelDirectory.path}${Platform.pathSeparator}$fileName',
-  );
-  if (await destination.exists() && await destination.length() > 0) {
-    return destination;
-  }
-
-  final data = await rootBundle.load(assetPath);
-  final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  final temporary = File('${destination.path}.tmp');
-  await temporary.writeAsBytes(bytes, flush: true);
-  if (await destination.exists()) await destination.delete();
-  return temporary.rename(destination.path);
-}

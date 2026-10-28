@@ -19,10 +19,12 @@ class StudyMaterial {
   final String? source;
   final String? localPath;
 
-  bool get isImported => localPath != null;
+  bool get isDownloaded => id.startsWith('downloaded:');
+  bool get isImported => localPath != null && !isDownloaded;
   bool get isBundledAudio => type == 'audio' && source != null;
   bool get isBundledPdf => type == 'pdf' && source != null;
-  bool get isAvailable => isImported || isBundledAudio || isBundledPdf;
+  bool get isAvailable =>
+      isDownloaded || isImported || isBundledAudio || isBundledPdf;
 
   factory StudyMaterial.fromJson(Map<String, dynamic> json) {
     final levelValue = json['level'];

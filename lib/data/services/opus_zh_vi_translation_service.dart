@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:dart_sentencepiece_tokenizer/dart_sentencepiece_tokenizer.dart';
 
+import 'opus_model_download_service.dart';
 import 'opus_onnx_runtime_stub.dart'
     if (dart.library.ffi) 'opus_onnx_runtime_ffi.dart';
 
@@ -21,6 +22,9 @@ class OpusZhViTranslationService {
   Map<String, int>? _modelVocabulary;
   Map<int, int>? _modelTargetToTokenizerIds;
 
+  Future<bool> get isModelDownloaded =>
+      OpusModelDownloadService.instance.isInstalled;
+
   Future<String> translate(String text) async {
     final query = text.trim();
     if (query.isEmpty) {
@@ -29,6 +33,11 @@ class OpusZhViTranslationService {
     if (!containsChinese(query)) {
       throw const FormatException(
         'Model Opus zh-vi chỉ hỗ trợ dịch từ tiếng Trung sang tiếng Việt.',
+      );
+    }
+    if (!await isModelDownloaded) {
+      throw StateError(
+        'Hãy tải mô hình dịch Trung–Việt trong mục Dữ liệu và AI.',
       );
     }
 
